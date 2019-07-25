@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"> 
+		<title>Signavio BPMN Cleaner</title>
+		<link rel="stylesheet" href="./bpm.css">
+	</head>
+	<body>
+		<div id="cont">
+			<h2>Signavio BPMN Cleaner</h2>
+			<h5>Upload BPMN exported from signavio and a cleaned version for import to APS will be generated</h5>
+			<input type="file" id="xmlUp">
+		</div>
+		<script>
+			const parser = new DOMParser();
+			const reader = new FileReader();
+			const upload = document.getElementById('xmlUp');
+			
+			const recurseXml = function(node) {
+				if (node.childNodes) {
+					node.childNodes.forEach(n => {
+						const tagName = n.tagName;
+						if (tagName) {
+							if (tagName.startsWith('signavio')) {
+								n.remove();
+							} else {
+								recurseXml(n);
+							}
+						}
+					})
+				}
+			}
+			
+			upload.addEventListener('change', function(e) {
+				let name;
+				reader.onload = (e) => {
+					const rawXml = e.target.result;
+					const parsedXml = parser.parseFromString(rawXml, 'application/xml');
+					recurseXml(parsedXml);
+					const finalXmlString = new XMLSerializer().serializeToString(parsedXml);
+					const a = document.createElement('a');
+					const file = new Blob([finalXmlString], {type: 'application/xml'});
+					a.href = URL.createObjectURL(file);
+					a.download = `${name}.bpmn20.xml`;
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+				};
+				name = upload.files[0].name;
+				name = name.substring(0, name.lastIndexOf('.'));
+				reader.readAsText(upload.files[0]);
+				upload.value = '';
+			})
+		</script>
+	</body>
+</html>
